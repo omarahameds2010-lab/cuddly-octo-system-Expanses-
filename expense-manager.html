@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>مدير المصروفات</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@300;400;700;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080f;--surface:#0f1018;--card:#14151f;--border:#1e2030;
+  --green:#22c55e;--red:#ef4444;--blue:#3b82f6;--gold:#f59e0b;
+  --purple:#a855f7;--cyan:#06b6d4;
+  --text:#f1f5f9;--muted:#64748b;--subtle:#1e293b;
+}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 80% 10%,rgba(34,197,94,.06),transparent 60%),radial-gradient(ellipse at 20% 90%,rgba(59,130,246,.05),transparent 60%);pointer-events:none;z-index:0}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(7,8,15,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:'Tajawal',sans-serif;font-size:1.2rem;font-weight:900;color:var(--green)}
+.nav-logo span{color:var(--text)}
+.currency-switch{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px}
+.cur-btn{padding:5px 14px;border-radius:6px;border:none;background:transparent;color:var(--muted);font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s}
+.cur-btn.active{background:var(--green);color:#000}
+
+/* MAIN */
+main{max-width:1100px;margin:0 auto;padding:28px 20px;position:relative;z-index:1}
+
+/* SUMMARY CARDS */
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+.sum-card:hover{transform:translateY(-3px)}
+.sum-card::before{content:'';position:absolute;top:0;right:0;left:0;height:3px}
+.sum-card.income::before{background:var(--green)}
+.sum-card.expense::before{background:var(--red)}
+.sum-card.balance::before{background:var(--blue)}
+.sum-card.grocery::before{background:var(--gold)}
+.sum-label{font-size:.72rem;color:var(--muted);margin-bottom:8px;font-weight:600;letter-spacing:.5px}
+.sum-val{font-family:'Tajawal',sans-serif;font-size:1.7rem;font-weight:900;line-height:1}
+.sum-val.green{color:var(--green)}
+.sum-val.red{color:var(--red)}
+.sum-val.blue{color:var(--blue)}
+.sum-val.gold{color:var(--gold)}
+.sum-sub{font-size:.7rem;color:var(--muted);margin-top:6px}
+
+/* GRID LAYOUT */
+.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.full{grid-column:span 2}
+
+/* PANELS */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px}
+.panel-title{font-size:.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.panel-title::before{content:'';flex:1;height:1px;background:var(--border)}
+.panel-title-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* FORM */
+.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.form-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:120px}
+label.fl{font-size:.72rem;color:var(--muted);font-weight:600;letter-spacing:.5px}
+input,select{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Cairo',sans-serif;font-size:.85rem;padding:9px 12px;outline:none;width:100%;transition:border-color .2s}
+input:focus,select:focus{border-color:var(--green)}
+input::placeholder{color:var(--muted)}
+select option{background:var(--surface)}
+
+.btn{padding:10px 20px;border-radius:8px;border:none;font-family:'Cairo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-green{background:var(--green);color:#000}
+.btn-green:hover{background:#16a34a}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{background:#b91c1c}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--green);color:var(--green)}
+
+/* CATEGORY PILLS */
+.cat-pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.cat-pill{padding:5px 13px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Cairo',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .2s}
+.cat-pill.active{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.08)}
+
+/* TRANSACTION LIST */
+.tx-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;padding-left:4px}
+.tx-list::-webkit-scrollbar{width:3px}
+.tx-list::-webkit-scrollbar-track{background:transparent}
+.tx-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.tx-item{display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;transition:border-color .2s}
+.tx-item:hover{border-color:rgba(100,116,139,.4)}
+.tx-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.tx-info{flex:1;min-width:0}
+.tx-name{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-cat{font-size:.7rem;color:var(--muted)}
+.tx-date{font-size:.68rem;color:var(--muted)}
+.tx-amount{font-family:'Tajawal',sans-serif;font-size:.95rem;font-weight:700;flex-shrink:0}
+.tx-amount.inc{color:var(--green)}
+.tx-amount.exp{color:var(--red)}
+.tx-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 6px;border-radius:4px;transition:color .2s}
+.tx-del:hover{color:var(--red)}
+
+/* GROCERY */
+.grocery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.groc-cat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
+.groc-cat-title{font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.groc-items{display:flex;flex-direction:column;gap:6px}
+.groc-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card);border:1px solid var(--border);border-radius:8px}
+.groc-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.groc-item .gi-name{font-size:.82rem;flex:1}
+.groc-item .gi-price{font-size:.8rem;color:var(--gold);font-weight:700;font-family:'Tajawal',sans-serif}
+.groc-item.done .gi-name{text-decoration:line-through;color:var(--muted)}
+.groc-add{display:flex;gap:8px;margin-top:10px}
+
+/* CHART BARS */
+.chart-wrap{margin-top:8px}
+.chart-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.chart-bar-label{font-size:.75rem;color:var(--muted);width:60px;text-align:left;flex-shrink:0}
+.chart-bar-track{flex:1;height:8px;background:var(--subtle);border-radius:4px;overflow:hidden}
+.chart-bar-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.chart-bar-val{font-size:.72rem;font-weight:700;width:60px;text-align:right;flex-shrink:0}
+
+/* BUDGET */
+.budget-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.budget-label{font-size:.8rem;color:var(--text)}
+.budget-pct{font-size:.75rem;font-weight:700}
+.budget-track{height:6px;background:var(--subtle);border-radius:3px;overflow:hidden;margin-bottom:14px}
+.budget-fill{height:100%;border-radius:3px;transition:width .6s ease}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:30px;color:var(--muted);font-size:.85rem}
+.empty-icon{font-size:2rem;margin-bottom:8px}
+
+/* RESPONSIVE */
+@media(max-width:700px){
+  .summary-grid{grid-template-columns:1fr 1fr}
+  .content-grid{grid-template-columns:1fr}
+  .full{grid-column:span 1}
+  .grocery-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">💰 مدير <span>المصروفات</span></div>
+  <div class="currency-switch">
+    <button class="cur-btn active" onclick="setCurrency('EGP')" id="btn-egp">EGP جنيه</button>
+    <button class="cur-btn" onclick="setCurrency('USD')" id="btn-usd">USD دولار</button>
+  </div>
+</nav>
+
+<main>
+  <!-- SUMMARY -->
+  <div class="summary-grid">
+    <div class="sum-card income">
+      <div class="sum-label">إجمالي الدخل</div>
+      <div class="sum-val green" id="total-income">0</div>
+      <div class="sum-sub" id="income-count">0 معاملة</div>
+    </div>
+    <div class="sum-card expense">
+      <div class="sum-label">إجمالي المصروفات</div>
+      <div class="sum-val red" id="total-expense">0</div>
+      <div class="sum-sub" id="expense-count">0 معاملة</div>
+    </div>
+    <div class="sum-card balance">
+      <div class="sum-label">الرصيد الحالي</div>
+      <div class="sum-val blue" id="balance">0</div>
+      <div class="sum-sub" id="balance-status">—</div>
+    </div>
+    <div class="sum-card grocery">
+      <div class="sum-label">مصروف الغذاء</div>
+      <div class="sum-val gold" id="grocery-total">0</div>
+      <div class="sum-sub" id="grocery-items-count">0 صنف</div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+
+    <!-- ADD TRANSACTION -->
+    <div class="panel">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--green)"></div>إضافة معاملة</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="fl">الاسم / الوصف</label>
+          <input id="tx-name" placeholder="مثال: راتب، فاتورة كهرباء..."/>
+        </div>
+        <div class="form-group" style="max-width:130px">
+          <label class="fl">المبلغ</label>
+          <input id="tx-amount" type="number" placeholder="0.00" min="0"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="fl">النوع</label>
+          <select id="tx-type">
+            <option value="income">دخل ↑</option>
+            <option value="expense">مصروف ↓</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="fl">الفئة</label>
+          <select id="tx-cat">
+            <option value="راتب">💼 راتب</option>
+            <option value="فريلانس">💻 فريلانس</option>
+            <option value="طعام">🥗 طعام</option>
+            <option value="مواصلات">🚌 مواصلات</option>
+            <option value="فواتير">💡 فواتير</option>
+            <option value="ملابس">👕 ملابس</option>
+            <option value="ترفيه">🎮 ترفيه</option>
+            <option value="صحة">🏥 صحة</option>
+            <option value="تعليم">📚 تعليم</option>
+            <option value="أخرى">📦 أخرى</option>
+          </select>
+        </div>
+        <div class="form-group" style="max-width:140px">
+          <label class="fl">التاريخ</label>
+          <input id="tx-date" type="date"/>
+        </div>
+      </div>
+      <button class="btn btn-green" style="width:100%" onclick="addTransaction()">+ إضافة</button>
+    </div>
+
+    <!-- BUDGET -->
+    <div class="panel">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--blue)"></div>الميزانية الشهرية</div>
+      <div class="form-row" style="margin-bottom:16px">
+        <div class="form-group">
+          <label class="fl">حدد الميزانية الشهرية</label>
+          <input id="budget-input" type="number" placeholder="0" oninput="updateBudget()"/>
+        </div>
+        <div class="form-group" style="max-width:80px;justify-content:flex-end">
+          <label class="fl">&nbsp;</label>
+          <button class="btn btn-ghost" onclick="document.getElementById('budget-input').value='';updateBudget()">مسح</button>
+        </div>
+      </div>
+      <div id="budget-display">
+        <div class="budget-row">
+          <span class="budget-label">تم صرفه</span>
+          <span class="budget-pct" id="budget-pct-txt">0%</span>
+        </div>
+        <div class="budget-track">
+          <div class="budget-fill" id="budget-fill" style="width:0%;background:var(--green)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)">
+          <span id="budget-spent-lbl">صُرف: 0</span>
+          <span id="budget-remain-lbl">متبقي: 0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="panel full">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--purple)"></div>سجل المعاملات</div>
+      <div class="cat-pills" id="filter-pills">
+        <button class="cat-pill active" onclick="filterTx('all',this)">الكل</button>
+        <button class="cat-pill" onclick="filterTx('income',this)">دخل</button>
+        <button class="cat-pill" onclick="filterTx('expense',this)">مصروف</button>
+        <button class="cat-pill" onclick="filterTx('طعام',this)">طعام</button>
+        <button class="cat-pill" onclick="filterTx('مواصلات',this)">مواصلات</button>
+        <button class="cat-pill" onclick="filterTx('فواتير',this)">فواتير</button>
+      </div>
+      <div class="tx-list" id="tx-list">
+        <div class="empty-state"><div class="empty-icon">📋</div>لا توجد معاملات بعد</div>
+      </div>
+    </div>
+
+    <!-- CHART -->
+    <div class="panel">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--cyan)"></div>توزيع المصروفات</div>
+      <div class="chart-wrap" id="chart-wrap">
+        <div class="empty-state"><div class="empty-icon">📊</div>أضف معاملات لعرض الرسم البياني</div>
+      </div>
+    </div>
+
+    <!-- GROCERY -->
+    <div class="panel">
+      <div class="panel-title"><div class="panel-title-dot" style="background:var(--gold)"></div>قائمة التسوق</div>
+      <div class="grocery-grid">
+        <div class="groc-cat">
+          <div class="groc-cat-title" style="color:var(--green)">🥬 خضار وفاكهة</div>
+          <div class="groc-items" id="groc-veg"></div>
+          <div class="groc-add">
+            <input id="veg-name" placeholder="صنف..." style="flex:1"/>
+            <input id="veg-price" type="number" placeholder="سعر" style="width:70px"/>
+            <button class="btn btn-green" style="padding:8px 12px" onclick="addGroc('veg')">+</button>
+          </div>
+        </div>
+        <div class="groc-cat">
+          <div class="groc-cat-title" style="color:var(--red)">🥩 لحوم وفراخ</div>
+          <div class="groc-items" id="groc-meat"></div>
+          <div class="groc-add">
+            <input id="meat-name" placeholder="صنف..." style="flex:1"/>
+            <input id="meat-price" type="number" placeholder="سعر" style="width:70px"/>
+            <button class="btn btn-red" style="padding:8px 12px" onclick="addGroc('meat')">+</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border)">
+        <span style="font-size:.8rem;color:var(--muted)">إجمالي قائمة التسوق</span>
+        <span style="font-family:'Tajawal',sans-serif;font-size:1.1rem;font-weight:700;color:var(--gold)" id="groc-sum">0</span>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+let currency = 'EGP';
+let rate = 50; // 1 USD = 50 EGP approx
+let transactions = JSON.parse(localStorage.getItem('txs') || '[]');
+let groceries = JSON.parse(localStorage.getItem('grocs') || '{"veg":[],"meat":[]}');
+let budgetVal = parseFloat(localStorage.getItem('budget') || '0');
+let filterMode = 'all';
+
+const ICONS = {راتب:'💼',فريلانس:'💻',طعام:'🥗',مواصلات:'🚌',فواتير:'💡',ملابس:'👕',ترفيه:'🎮',صحة:'🏥',تعليم:'📚',أخرى:'📦'};
+const COLORS = {راتب:'#22c55e',فريلانس:'#06b6d4',طعام:'#f59e0b',مواصلات:'#3b82f6',فواتير:'#ef4444',ملابس:'#a855f7',ترفيه:'#ec4899',صحة:'#14b8a6',تعليم:'#f97316',أخرى:'#64748b'};
+
+// Set today's date
+document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+
+function fmt(n) {
+  let val = currency === 'EGP' ? n : n / rate;
+  return (currency === 'EGP' ? '' : '$') + val.toLocaleString('ar-EG', {minimumFractionDigits:0,maximumFractionDigits:0}) + (currency === 'EGP' ? ' ج' : '');
+}
+
+function setCurrency(c) {
+  currency = c;
+  document.getElementById('btn-egp').classList.toggle('active', c==='EGP');
+  document.getElementById('btn-usd').classList.toggle('active', c==='USD');
+  render();
+}
+
+function addTransaction() {
+  const name = document.getElementById('tx-name').value.trim();
+  const amount = parseFloat(document.getElementById('tx-amount').value);
+  const type = document.getElementById('tx-type').value;
+  const cat = document.getElementById('tx-cat').value;
+  const date = document.getElementById('tx-date').value;
+  if(!name || !amount || amount <= 0) { alert('أدخل الاسم والمبلغ'); return; }
+  transactions.unshift({id:Date.now(),name,amount,type,cat,date});
+  localStorage.setItem('txs', JSON.stringify(transactions));
+  document.getElementById('tx-name').value='';
+  document.getElementById('tx-amount').value='';
+  render();
+}
+
+function deleteTransaction(id) {
+  transactions = transactions.filter(t => t.id !== id);
+  localStorage.setItem('txs', JSON.stringify(transactions));
+  render();
+}
+
+function filterTx(mode, btn) {
+  filterMode = mode;
+  document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderTxList();
+}
+
+function renderTxList() {
+  const list = document.getElementById('tx-list');
+  let filtered = transactions;
+  if(filterMode === 'income') filtered = transactions.filter(t=>t.type==='income');
+  else if(filterMode === 'expense') filtered = transactions.filter(t=>t.type==='expense');
+  else if(filterMode !== 'all') filtered = transactions.filter(t=>t.cat===filterMode);
+
+  if(!filtered.length){ list.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div>لا توجد معاملات</div>'; return; }
+  list.innerHTML = filtered.map(t => `
+    <div class="tx-item">
+      <div class="tx-icon" style="background:${COLORS[t.cat]}22">${ICONS[t.cat]||'📦'}</div>
+      <div class="tx-info">
+        <div class="tx-name">${t.name}</div>
+        <div class="tx-cat">${t.cat} · <span class="tx-date">${t.date}</span></div>
+      </div>
+      <div class="tx-amount ${t.type==='income'?'inc':'exp'}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</div>
+      <button class="tx-del" onclick="deleteTransaction(${t.id})">🗑</button>
+    </div>
+  `).join('');
+}
+
+function renderSummary() {
+  const inc = transactions.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const exp = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const bal = inc - exp;
+  const foodExp = transactions.filter(t=>t.cat==='طعام'&&t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const grocTotal = [...groceries.veg,...groceries.meat].reduce((s,g)=>s+g.price,0);
+
+  document.getElementById('total-income').textContent = fmt(inc);
+  document.getElementById('income-count').textContent = transactions.filter(t=>t.type==='income').length + ' معاملة';
+  document.getElementById('total-expense').textContent = fmt(exp);
+  document.getElementById('expense-count').textContent = transactions.filter(t=>t.type==='expense').length + ' معاملة';
+  document.getElementById('balance').textContent = fmt(Math.abs(bal));
+  document.getElementById('balance-status').textContent = bal >= 0 ? '✅ رصيد إيجابي' : '⚠️ عجز في الميزانية';
+  document.getElementById('balance').className = 'sum-val ' + (bal>=0?'blue':'red');
+  document.getElementById('grocery-total').textContent = fmt(grocTotal);
+  document.getElementById('grocery-items-count').textContent = (groceries.veg.length+groceries.meat.length) + ' صنف';
+
+  // Budget
+  if(budgetVal > 0) {
+    const pct = Math.min((exp/budgetVal)*100,100);
+    document.getElementById('budget-fill').style.width = pct+'%';
+    document.getElementById('budget-fill').style.background = pct>85?'var(--red)':pct>60?'var(--gold)':'var(--green)';
+    document.getElementById('budget-pct-txt').textContent = Math.round(pct)+'%';
+    document.getElementById('budget-spent-lbl').textContent = 'صُرف: '+fmt(exp);
+    document.getElementById('budget-remain-lbl').textContent = 'متبقي: '+fmt(Math.max(budgetVal-exp,0));
+  }
+}
+
+function renderChart() {
+  const wrap = document.getElementById('chart-wrap');
+  const expTxs = transactions.filter(t=>t.type==='expense');
+  if(!expTxs.length){ wrap.innerHTML='<div class="empty-state"><div class="empty-icon">📊</div>أضف مصروفات لعرض الرسم</div>'; return; }
+  const cats = {};
+  expTxs.forEach(t=>{ cats[t.cat]=(cats[t.cat]||0)+t.amount; });
+  const max = Math.max(...Object.values(cats));
+  wrap.innerHTML = Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`
+    <div class="chart-bar-row">
+      <div class="chart-bar-label">${ICONS[cat]||''} ${cat}</div>
+      <div class="chart-bar-track">
+        <div class="chart-bar-fill" style="width:${(val/max*100)}%;background:${COLORS[cat]||'#64748b'}"></div>
+      </div>
+      <div class="chart-bar-val" style="color:${COLORS[cat]||'#64748b'}">${fmt(val)}</div>
+    </div>
+  `).join('');
+}
+
+function updateBudget() {
+  budgetVal = parseFloat(document.getElementById('budget-input').value) || 0;
+  localStorage.setItem('budget', budgetVal);
+  renderSummary();
+}
+
+// GROCERY
+function addGroc(type) {
+  const nameEl = document.getElementById(type==='veg'?'veg-name':'meat-name');
+  const priceEl = document.getElementById(type==='veg'?'veg-price':'meat-price');
+  const name = nameEl.value.trim();
+  const price = parseFloat(priceEl.value) || 0;
+  if(!name) return;
+  groceries[type].push({id:Date.now(),name,price,done:false});
+  localStorage.setItem('grocs', JSON.stringify(groceries));
+  nameEl.value=''; priceEl.value='';
+  renderGrocery();
+  renderSummary();
+}
+
+function toggleGroc(type, id) {
+  groceries[type] = groceries[type].map(g => g.id===id?{...g,done:!g.done}:g);
+  localStorage.setItem('grocs', JSON.stringify(groceries));
+  renderGrocery();
+}
+
+function delGroc(type, id) {
+  groceries[type] = groceries[type].filter(g=>g.id!==id);
+  localStorage.setItem('grocs', JSON.stringify(groceries));
+  renderGrocery();
+  renderSummary();
+}
+
+function renderGrocery() {
+  ['veg','meat'].forEach(type => {
+    const el = document.getElementById('groc-'+type);
+    el.innerHTML = groceries[type].map(g=>`
+      <div class="groc-item${g.done?' done':''}">
+        <input type="checkbox" ${g.done?'checked':''} onchange="toggleGroc('${type}',${g.id})"/>
+        <span class="gi-name">${g.name}</span>
+        <span class="gi-price">${fmt(g.price)}</span>
+        <button class="tx-del" onclick="delGroc('${type}',${g.id})">✕</button>
+      </div>
+    `).join('') || '<div style="color:var(--muted);font-size:.75rem;text-align:center;padding:6px">لا يوجد أصناف</div>';
+  });
+  const total = [...groceries.veg,...groceries.meat].reduce((s,g)=>s+g.price,0);
+  document.getElementById('groc-sum').textContent = fmt(total);
+}
+
+function render() {
+  renderSummary();
+  renderTxList();
+  renderChart();
+  renderGrocery();
+}
+
+// Init budget input
+if(budgetVal > 0) document.getElementById('budget-input').value = budgetVal;
+render();
+</script>
+</body>
+</html>
